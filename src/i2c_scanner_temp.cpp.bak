@@ -1,0 +1,99 @@
+// Temporary I2C Scanner - Rename to main.cpp to test
+// This will scan ALL I2C addresses and show EXACTLY what's connected
+
+#include <Wire.h>
+
+#define SDA_PIN 0  // GPIO0
+#define SCL_PIN 2  // GPIO2
+
+void setup() {
+  Serial.begin(115200);
+  delay(2000);
+  
+  Serial.println("\n\n========================================");
+  Serial.println("ESP-01 I2C Scanner - FULL DIAGNOSTIC");
+  Serial.println("========================================\n");
+  
+  // Test GPIO pins first
+  Serial.println("Testing GPIO pins...");
+  pinMode(SDA_PIN, INPUT_PULLUP);
+  pinMode(SCL_PIN, INPUT_PULLUP);
+  delay(100);
+  
+  Serial.print("GPIO0 (SDA) reads: ");
+  Serial.println(digitalRead(SDA_PIN) ? "HIGH ✓" : "LOW ✗");
+  Serial.print("GPIO2 (SCL) reads: ");
+  Serial.println(digitalRead(SCL_PIN) ? "HIGH ✓" : "LOW ✗");
+  
+  Serial.println("\nInitializing I2C...");
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setClock(100000);  // 100kHz
+  delay(500);
+  Serial.println("✓ I2C initialized\n");
+  
+  Serial.println("Scanning I2C bus (0x00-0x7F)...");
+  Serial.println("Address | Status | Device");
+  Serial.println("--------|--------|------------------");
+  
+  int deviceCount = 0;
+  
+  for (byte addr = 0; addr < 128; addr++) {
+    Wire.beginTransmission(addr);
+    byte error = Wire.endTransmission();
+    
+    Serial.print("  0x");
+    if (addr < 16) Serial.print("0");
+    Serial.print(addr, HEX);
+    Serial.print("  |  ");
+    
+    if (error == 0) {
+      Serial.print("FOUND  | ");
+      deviceCount++;
+      
+      // Identify known devices
+      if (addr == 0x10) Serial.println("Si4703 FM Radio! ✓");
+      else if (addr == 0x11) Serial.println("Si4703 (alt address)");
+      else if (addr == 0x3C) Serial.println("OLED Display");
+      else if (addr >= 0x20 && addr <= 0x27) Serial.println("PCF8574 I/O Expander");
+      else Serial.println("Unknown device");
+      
+    } else if (error == 2) {
+      Serial.println("NACK   | No device");
+    } else if (error == 3) {
+      Serial.println("NACK   | Data too long");
+    } else if (error == 4) {
+      Serial.println("ERROR  | Unknown error");
+    } else {
+      Serial.print("ERR ");
+      Serial.print(error);
+      Serial.println(" | Transmission error");
+    }
+    
+    delay(10);
+  }
+  
+  Serial.println("========================================");
+  if (deviceCount == 0) {
+    Serial.println("❌ NO I2C DEVICES FOUND!");
+    Serial.println("\n🔧 TROUBLESHOOTING:");
+    Serial.println("1. Check Si4703 VCC = 3.3V");
+    Serial.println("2. Check Si4703 GND connected");
+    Serial.println("3. Check Si4703 SEN pin = 3.3V (I2C mode!)");
+    Serial.println("4. Check Si4703 RST pin = 3.3V (via 10kΩ)");
+    Serial.println("5. Check SDIO wire: Si4703 → GPIO0");
+    Serial.println("6. Check SCLK wire: Si4703 → GPIO2");
+    Serial.println("7. Add 10kΩ pull-up resistors on GPIO0 & GPIO2");
+    Serial.println("8. Measure voltage on SDIO/SCLK (should be 3.3V)");
+  } else {
+    Serial.print("✓ Found ");
+    Serial.print(deviceCount);
+    Serial.println(" device(s) on I2C bus");
+  }
+  Serial.println("========================================\n");
+}
+
+void loop() {
+  delay(5000);
+  Serial.println("\n[Press RESET to scan again]\n");
+  delay(5000);
+}
