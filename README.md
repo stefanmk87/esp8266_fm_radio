@@ -280,7 +280,7 @@ esp8266_fm_radio/
 - **ESP8266 Core**: ESP8266 Community
 - **Si4703 Library**: SparkFun Electronics
 - **Web Interface**: Custom responsive design
-- **Project Creator**: Stefan (with Claude AI assistance)
+- **Project Creator**: Stefan
 
 ## License
 
